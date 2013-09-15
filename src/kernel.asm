@@ -6,6 +6,7 @@
 
     %INCLUDE 'defines.asm'
 
+
 ; ------------------------------------------------------------------
 ; Kernel entry point, called by loader.
 

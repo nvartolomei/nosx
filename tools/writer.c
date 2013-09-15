@@ -75,15 +75,21 @@ int main(int argc, const char * argv[])
         return 2;
     }
 
-    read = fread(buffer, 1, 512, kernel_file);
-    write = fwrite(buffer, 1, read, boot_file);
+    for (;;) {
+        read = fread(buffer, 1, 512, kernel_file);
+        write = fwrite(buffer, 1, read, boot_file);
 
-    if (write != read) {
-        printf("Error occured when trying to write boot sector(kernel): %s", strerror(errno));
+        if (write != read) {
+            printf("Error occured when trying to write boot sector(kernel): %s", strerror(errno));
 
-        return 2;
+            return 2;
+        }
+
+        /* File end */
+        if (read < 512) break;
     }
 
+    /* Make file right size: 1.44MB */
     buffer[0] = 0;
     fseek(boot_file, 1440 * 1024 - 1, SEEK_SET);
     fwrite(buffer, 1, 1, boot_file);

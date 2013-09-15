@@ -3,15 +3,15 @@
 
 all: boot.img
 
-run: boot.img
+test: boot.img
 	qemu-system-i386 -fda boot.img
 
-boot.img: bin/loader.bin bin/kernel.bin tools/writer
-	tools/writer bin/loader.bin bin/kernel.bin boot.img
+boot.img: bin/bootloader.bin bin/kernel.bin tools/writer
+	tools/writer bin/bootloader.bin bin/kernel.bin boot.img
 
-bin/loader.bin: src/loader.asm
+bin/bootloader.bin: src/bootloader.asm
 	@echo "> Compiling loader"
-	nasm -f bin -I src/inc/ -o bin/loader.bin src/loader.asm
+	nasm -f bin -I src/inc/ -o bin/bootloader.bin src/bootloader.asm
 	@echo "> End compiling loader"
 
 bin/kernel.bin: src/kernel.asm
@@ -27,6 +27,6 @@ tools/writer: tools/writer.c
 clean:
 	$(MAKE) -C tools clean
 
-	rm -rf bin/loader.bin
+	rm -rf bin/bootloader.bin
 	rm -rf bin/kernel.bin
 	rm -rf boot.img

@@ -120,9 +120,10 @@ end:
     mov si, kernel_delay
     call print_string
 
-    ; wait for user input
-    mov ah, 0h
-    int 16h
+    ; Set up 3s delay
+    mov ah, 86h
+    mov cx, 30
+    int 15h
 
     ; Jump to entry point of loaded kernel
     jmp kernel_seg:0000h
@@ -232,7 +233,7 @@ l2hts:
     pointer              dw    0
 
     bootloader_welcome   db    'Bootloader is running...!', NL, NL, 0
-    kernel_delay         db    NL, NL, 'Press any key to start Kernel...', NL, 0
+    kernel_delay         db    NL, NL, 'Starting Kernel in 3 seconds...', NL, 0
 
     fatal_disk_error_msg db    NL, 'Fatal disk error! Press any key to reboot...', 0
     read_disk_error_msg  db    NL, 'Could not read sector! Press any key to try again...', NL, 0
