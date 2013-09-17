@@ -27,9 +27,15 @@ start:
     mov si, k_init_msg
     call nx_print_string
 
+    call nx_print_nl
+
+    mov si, k_hello_msg
+    call nx_print_string
+
     jmp $
 
     k_init_msg    db 'NOSX Operating System v', NOSX_VERSION, NL, 0
+    k_hello_msg   db 'Hello %username%!', NL, 0
 
 
 ; ------------------------------------------------------------------

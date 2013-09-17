@@ -27,6 +27,24 @@ nx_print_string:
     ret
 
 ; ------------------------------------------------------------------
+; nx_print_nl -- Displays a new line
+; IN: Nothing
+; OUT: Nothing (registers preserved)
+
+nx_print_nl:
+    pusha
+
+    mov ah, 0Eh         ; int 10h teletype function
+
+    mov al, 0Dh
+    int 10h
+    mov al, 0Ah
+    int 10h
+
+    popa
+    ret
+
+; ------------------------------------------------------------------
 ; nx_clear_screen -- Clears the screen to background
 ; IN/OUT: Nothing (registers preserved)
 
