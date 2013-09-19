@@ -27,15 +27,15 @@ start:
     mov si, k_init_msg
     call nx_print_string
 
-    call nx_print_nl
-
-    mov si, k_hello_msg
-    call nx_print_string
+    mov si, k_what_msg
+    call nx_print_string_cbc
 
     jmp $
 
-    k_init_msg    db 'NOSX Operating System v', NOSX_VERSION, NL, 0
-    k_hello_msg   db 'Hello %username%!', NL, 0
+    k_init_msg    db 'NOSX Operating System v', NOSX_VERSION,      NL, NL, 0
+    k_what_msg    db 'Hello %username%, what year is now?',        NL,      \
+                     'And why you are still using floppy drives?', NL, NL,  \
+                     '  -- VARTOLOMEI Nicolae, TI-112, UTM 2013',  NL, 0
 
 
 ; ------------------------------------------------------------------

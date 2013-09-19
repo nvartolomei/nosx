@@ -2,30 +2,33 @@
 
 
 all: boot.img
+	@echo
+	@echo "  >>> Build succeeded <<<  "
 
 test: boot.img
-	qemu-system-i386 -fda boot.img
+	@echo "  >>> Starting emulator <<<  "
+	@qemu-system-i386 -fda boot.img
+
+release: bin/bootloader.bin bin/kernel.bin tools/writer
+	@sudo tools/writer bin/bootloader.bin bin/kernel.bin /dev/disk1
 
 boot.img: bin/bootloader.bin bin/kernel.bin tools/writer
-	tools/writer bin/bootloader.bin bin/kernel.bin boot.img
+	@tools/writer bin/bootloader.bin bin/kernel.bin boot.img
 
 bin/bootloader.bin: src/bootloader.asm
-	@echo "> Compiling loader"
-	nasm -f bin -I src/inc/ -o bin/bootloader.bin src/bootloader.asm
-	@echo "> End compiling loader"
+	@echo "> Compiling loader..."
+	@nasm -f bin -I src/inc/ -o bin/bootloader.bin src/bootloader.asm
 
-bin/kernel.bin: src/kernel.asm
-	@echo "> Compiling kernel"
+bin/kernel.bin: src/kernel.asm src/inc/screen.asm
+	@echo "> Compiling kernel..."
 	@nasm -f bin -I src/inc/ -o bin/kernel.bin src/kernel.asm
-	@echo "> End compiling kernel"
 
 tools/writer: tools/writer.c
-	@echo "> Making tools"
-	$(MAKE) -C tools
-	@echo "> End making tools"
+	@echo "> Compiling tools..."
+	@$(MAKE) -C tools
 
 clean:
-	$(MAKE) -C tools clean
+	@$(MAKE) -C tools clean
 
 	rm -rf bin/bootloader.bin
 	rm -rf bin/kernel.bin

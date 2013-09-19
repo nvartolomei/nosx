@@ -27,6 +27,39 @@ nx_print_string:
     ret
 
 ; ------------------------------------------------------------------
+; nx_print_string_cbc -- Displays text
+; IN: SI = message location (zero-terminated string)
+; OUT: Nothing (registers preserved)
+
+nx_print_string_cbc:
+    pusha
+
+.repeat:
+    lodsb               ; Get char from string
+    cmp al, 0
+    je .done            ; If char is zero, end of string
+
+    mov ah, 86h         ; int 15h delay function
+    xor cx, cx
+    mov dx, 0F000h      ; Short delay between characters
+
+    cmp al, 0Dh
+    jne .start_delay    ; If last character is new line, set longer delay
+
+    mov cx, 10h
+
+.start_delay:
+    int 15h             ; Start delay
+
+    mov ah, 0Eh         ; int 10h teletype function
+    int 10h             ; Otherwise, print it
+    jmp .repeat         ; And move on to next char
+
+.done:
+    popa
+    ret
+
+; ------------------------------------------------------------------
 ; nx_print_nl -- Displays a new line
 ; IN: Nothing
 ; OUT: Nothing (registers preserved)

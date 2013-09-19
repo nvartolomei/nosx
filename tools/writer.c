@@ -97,5 +97,7 @@ int main(int argc, const char * argv[])
     fclose(kernel_file);
     fclose(boot_file);
 
+    printf("Done...\n");
+
     return 0;
 }
