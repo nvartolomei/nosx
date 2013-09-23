@@ -247,8 +247,8 @@ l2hts:
 
     bootloader_welcome   db    'Bootloader is running...!', NL, NL, 0
 
-    kernel_delay_1         db    NL, NL, 'Starting Kernel in 2 seconds...', 0dh, 0
-    kernel_delay_2         db    'Starting Kernel in 1 seconds...', NL, 0
+    kernel_delay_1       db    NL, NL, 'Starting Kernel in 2 seconds...', 0dh, 0
+    kernel_delay_2       db    'Starting Kernel in 1 seconds...', NL, 0
 
     fatal_disk_error_msg db    NL, 'Fatal disk error! Press any key to reboot...', 0
     read_disk_error_msg  db    NL, 'Could not read sector! Press any key to try again...', NL, 0
