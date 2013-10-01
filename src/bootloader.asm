@@ -123,7 +123,7 @@ end:
     ; Set up 2s delay
     mov ah, 86h
     mov cx, 10
-    int 15h
+    ; int 15h
 
     mov si, kernel_delay_2
     call print_string
@@ -131,7 +131,7 @@ end:
     ; Set up 2s delay
     mov ah, 86h
     mov cx, 10
-    int 15h
+    ; int 15h
 
     ; Jump to entry point of loaded kernel
     jmp kernel_seg:0000h
@@ -150,11 +150,11 @@ progress:
     mov ah, 86h
     mov cx, 0
     mov dx, 3000h
-    int 15h
+    ; int 15h
 
     mov ah, 0Eh
     mov al, 0B0h
-    int 10h
+    ; int 10h
 
 .done:
     popa

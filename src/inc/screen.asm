@@ -27,6 +27,50 @@ nx_print_string:
     ret
 
 ; ------------------------------------------------------------------
+; nx_scan_string -- Take string from keyboard entry
+; IN/OUT: AX = location of string, other regs preserved
+; (Location will contain up to 255 characters, zero-terminated)
+
+nx_scan_string:
+    pusha
+
+    mov di, ax          ; DI is where we'll store input (buffer)
+
+.scan:                  ; Main loop
+    call nx_wait_for_key
+
+    cmp al, 13
+    je .done            ; If Enter key pressed we are done
+
+    cmp al, ' '         ; Ignore most non-printing characters
+    jb .scan
+
+    cmp al, '~'
+    ja .scan
+
+    jmp .accept
+
+.accept:
+    pusha
+    mov ah, 0Eh
+    int 10h             ; Print entered character
+    popa
+
+    stosb               ; Store input character into buffer
+    inc cx
+    cmp cx, 254         ; Make sure we still have empty space where to read
+    jae .done
+
+    jmp .scan
+
+.done:
+    mov ax, 0
+    stosb
+
+    popa
+    ret
+
+; ------------------------------------------------------------------
 ; nx_print_string_cbc -- Displays text
 ; IN: SI = message location (zero-terminated string)
 ; OUT: Nothing (registers preserved)
@@ -61,8 +105,7 @@ nx_print_string_cbc:
 
 ; ------------------------------------------------------------------
 ; nx_print_nl -- Displays a new line
-; IN: Nothing
-; OUT: Nothing (registers preserved)
+; IN/OUT: Nothing (registers preserved)
 
 nx_print_nl:
     pusha
