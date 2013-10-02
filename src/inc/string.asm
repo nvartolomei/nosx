@@ -3,11 +3,11 @@
 ; =============================================================================
 
 ; ------------------------------------------------------------------
-; os_string_compare -- See if two strings match
+; nx_string_cmp -- See if two strings match
 ; IN: SI = string one, DI = string two
 ; OUT: carry set if same, clear if different
 
-nx_string_compare:
+nx_string_cmp:
     pusha
 
 .more:

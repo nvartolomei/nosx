@@ -41,5 +41,7 @@ start:
 ; nasm include path must be set to ./src/inc/
 
     %INCLUDE 'keyboard.asm'
+    %INCLUDE 'string.asm'
     %INCLUDE 'screen.asm'
     %INCLUDE 'cli.asm'
+    %INCLUDE 'disk.asm'
