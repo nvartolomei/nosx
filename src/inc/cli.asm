@@ -11,6 +11,7 @@
 ;   * Restart                               RESTART
 ;   * Destroy everything                    DESTROY
 ;   * Beep a sound                          BEEP
+;   * Clear screen                          CLS
 
 ; ------------------------------------------------------------------
 ; Main Command Line Interpreter loop.
@@ -37,22 +38,22 @@ nx_cli:
     cmp byte [si], 0
     je nx_cli
 
-    ; Check if current command is 'EXIT'
+    ; Check if current command is 'exit'
     mov di, exit_cmd
     call nx_string_cmp
     jc command_exit
 
-    ; Check if current command is 'HELP'
+    ; Check if current command is 'help'
     mov di, help_cmd
     call nx_string_cmp
     jc command_help
 
-    ; Check if current command is 'LOGIN'
+    ; Check if current command is 'login'
     mov di, login_cmd
     call nx_string_cmp
     jc cli_log_in
 
-    ; Check if current commnand is 'CLS'
+    ; Check if current commnand is 'cls'
     mov di, cls_cmd
     call nx_string_cmp
     jc command_cls
@@ -66,37 +67,37 @@ nx_cli:
 ;    jmp nx_cli
 
 .authorized:
-    ; Check if current command is 'LOGOUT'
+    ; Check if current command is 'logout'
     mov di, logout_cmd
     call nx_string_cmp
     jc cli_log_out
 
-    ; Check if current command is 'TIME'
+    ; Check if current command is 'time'
     mov di, time_cmd
     call nx_string_cmp
     jc command_time
 
-    ; Check if current command is 'DATE'
+    ; Check if current command is 'date'
     mov di, date_cmd
     call nx_string_cmp
     jc command_date
 
-    ; Check if current command is 'BEEP'
+    ; Check if current command is 'beep'
     mov di, beep_cmd
     call nx_string_cmp
     jc command_beep
 
-    ; Check if current command is 'SYSINFO'
+    ; Check if current command is 'sysinfo'
     mov di, sysinfo_cmd
     call nx_string_cmp
     jc command_sysinfo
 
-    ; Check if current command is 'RESTART'
+    ; Check if current command is 'restart'
     mov di, restart_cmd
     call nx_string_cmp
     jc command_restart
 
-    ; Check if current command is 'DESTROY'
+    ; Check if current command is 'destroy'
     mov di, destroy_cmd
     call nx_string_cmp
     jc command_destroy
@@ -353,18 +354,62 @@ command_destroy:
     mov al, 01h
     int 13h
 
-    jc .done ; If error we are done
+    jc .done            ; If error we are done
 
     add word [.sector], 1
 
     jmp .destroy_file_sector
 
 .done:
+    mov ax, 13h         ; Switch to graphics mode
+    int 10h
 
-    mov ax, 0
-    int 19h             ; Reboot the system
+;    mov ah, 0Ch
+;    mov al, 4
+;    mov cx, 160
+;    mov dx, 100
+;    int 10h
 
-    call nx_cli
+mov al, 0Bh
+
+xor dx, dx
+.begin_line:
+    xor cx, cx
+
+.write_per_line:
+    call .get_rand_color
+    mov ah, 0Ch
+    inc cx
+    int 10h
+    cmp cx, 319
+    je .calc_next_line
+    jmp .write_per_line
+
+.calc_next_line:
+    cmp dx, 199
+    je .end
+    inc dx
+    jmp .begin_line
+
+.end:
+    jmp $
+
+    ;mov ax, 0
+    ;int 19h             ; Reboot the system
+
+.get_rand_color:
+    push cx
+    push dx
+
+    mov dx, 0
+    add ax, 0AFA7h
+    mov cx, 0Fh
+    div cx
+    mov ax, dx
+
+    pop dx
+    pop cx
+    ret
 
     .sector dw 0
     .buffer times 512 db 0
@@ -374,7 +419,7 @@ command_destroy:
     .destroy_str1 db 'The World And Everything You Know Will Destroy In 1', 0Dh, 0
 
 ; ------------------------------------------------------------------
-; Code for 'CLS' command.
+; Code for 'cls' command.
 
 command_cls:
     call nx_clear_screen
@@ -382,7 +427,7 @@ command_cls:
     jmp nx_cli
 
 ; ------------------------------------------------------------------
-; Code for 'HELP' command.
+; Code for 'help' command.
 
 command_help:
     mov si, cli_help_text
@@ -391,13 +436,13 @@ command_help:
     jmp nx_cli
 
 ; ------------------------------------------------------------------
-; Code for 'EXIT' command.
+; Code for 'exit' command.
 
 command_exit:
     ret
 
 ; ------------------------------------------------------------------
-; Code for 'RESTART' command.
+; Code for 'restart' command.
 
 command_restart:
     mov ax, 0
@@ -406,7 +451,7 @@ command_restart:
     ret
 
 ; ------------------------------------------------------------------
-; Code for 'LOGIN' command, auth module.
+; Code for 'login' command, auth module.
 
 cli_log_in:
     ; Check if user is authorized already
@@ -479,7 +524,7 @@ cli_log_in:
     jmp nx_cli
 
 ; ------------------------------------------------------------------
-; Code for 'LOGOUT' command, auth module.
+; Code for 'logout' command, auth module.
 
 cli_log_out:
     mov byte [user_logged_in], 0
@@ -498,10 +543,10 @@ cli_log_out:
     cli_prompt          db ' > ', 0
 
     cli_help_text       db 'NOSX ', NOSX_VERSION, ' Command Line Interpreter',      NL, NL,  \
-                           'CLI/OS related: EXIT, RESTART, SYSINFO, BEEP',     NL, NL,  \
-                           'For auth module available commands are: LOGIN, LOGOUT', NL,      \
-                           'For clock/calendar: TIME, DATE' ,                       NL, NL,  \
-                           'For this text run HELP, also you can EXIT cli.',        NL,      0
+                           'CLI/OS related: exit, restart, sysinfo, beep',          NL, NL,  \
+                           'For auth module available commands are: login, logout', NL,      \
+                           'For clock/calendar: time, date' ,                       NL, NL,  \
+                           'For this text run help, also you can exit cli.',        NL,      0
 
     cli_invalid_cmd     db 'ERROR: No such command!', NL, 0
 
@@ -510,28 +555,28 @@ cli_log_out:
 
     cli_auth_up         db 'Username: ', 0
     cli_auth_pp         db 'Password: ', 0
-    cli_auth_err        db 'ERROR: To interact with OS please LOGIN first', NL, 0
+    cli_auth_err        db 'ERROR: To interact with OS please `login` first', NL, 0
     cli_auth_welcome1   db 'Welcome, ', 0
-    cli_auth_welcome2   db 'Now you can run any command! See HELP', NL, 0
+    cli_auth_welcome2   db 'Now you can run any command! See `help`', NL, 0
     cli_auth_goodbye    db 'Goodbye...', NL, 0
-    cli_auth_already    db 'ERR: LOGOUT first so you can LOGIN with another account.', NL, 0
+    cli_auth_already    db 'ERR: `logout` first so you can `login` with another account.', NL, 0
 
 ; ------------------------------------------------------------------
 ; CLI available commands list.
 
-    login_cmd           db 'LOGIN',  0
-    logout_cmd          db 'LOGOUT', 0
+    login_cmd           db 'login',  0
+    logout_cmd          db 'logout', 0
 
-    help_cmd            db 'HELP', 0
-    exit_cmd            db 'EXIT', 0
+    help_cmd            db 'help', 0
+    exit_cmd            db 'exit', 0
 
-    time_cmd            db 'TIME',    0
-    date_cmd            db 'DATE',    0
-    cls_cmd             db 'CLS',     0
-    beep_cmd            db 'BEEP',    0
-    sysinfo_cmd         db 'SYSINFO', 0
-    restart_cmd         db 'RESTART', 0
-    destroy_cmd         db 'DESTROY', 0
+    time_cmd            db 'time',    0
+    date_cmd            db 'date',    0
+    cls_cmd             db 'cls',     0
+    beep_cmd            db 'beep',    0
+    sysinfo_cmd         db 'sysinfo', 0
+    restart_cmd         db 'restart', 0
+    destroy_cmd         db 'destroy', 0
 
     nx_username         db 'nv', 0
     nx_password         db '',   0
