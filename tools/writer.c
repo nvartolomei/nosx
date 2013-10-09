@@ -89,6 +89,14 @@ int main(int argc, const char * argv[])
         if (read < 512) break;
     }
 
+    /* Write some junk data */
+    printf("WARNING: Writing junk data, remove this as soon as you don't need it.\n");
+    fseek(boot_file, 1440 * 1024 / 2, SEEK_SET);
+    int i;
+    for (i = 0; i < 1000; i++) {
+        fwrite(buffer, 1, 512, boot_file);
+    }
+
     /* Make file right size: 1.44MB */
     buffer[0] = 0;
     fseek(boot_file, 1440 * 1024 - 1, SEEK_SET);

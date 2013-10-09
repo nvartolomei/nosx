@@ -3,15 +3,16 @@
 ; =============================================================================
 
 ; Available functionality:
-;   * Authentification                      LOGIN/LOGOUT
-;   * Date                                  DATE
-;   * Time                                  TIME
-;   * SYS/CPU Info                          SYSINFO
-;   * Exiting to bootloader                 EXIT
-;   * Restart                               RESTART
-;   * Destroy everything                    DESTROY
-;   * Beep a sound                          BEEP
-;   * Clear screen                          CLS
+;   * Authentification                      login/logout
+;   * Date                                  date
+;   * Time                                  time
+;   * SYS/CPU Info                          sysinfo
+;   * Exiting to bootloader                 exit
+;   * Restart                               restart
+;   * Destroy everything                    destroy
+;   * Beep a sound                          beep
+;   * Clear screen                          cls
+;   * Get boot drive free space             diskinfo
 
 ; ------------------------------------------------------------------
 ; Main Command Line Interpreter loop.
@@ -19,8 +20,8 @@
 nx_cli:
     ; Clear input buffer
     mov di, cli_input
-    mov al, 0
-    mov cx, 256
+    mov al, 0x0000
+    mov cx, 0x0100
     rep stosb
 
     ; Show CLI prompt
@@ -35,7 +36,7 @@ nx_cli:
 
     ; If command is emtpy prompt again
     mov si, cli_input
-    cmp byte [si], 0
+    cmp byte [si], 0x0
     je nx_cli
 
     ; Check if current command is 'exit'
@@ -91,6 +92,11 @@ nx_cli:
     mov di, sysinfo_cmd
     call nx_string_cmp
     jc command_sysinfo
+
+    ; Check if current command is 'diskinfo'
+    mov di, diskinfo_cmd
+    call nx_string_cmp
+    jc command_diskinfo
 
     ; Check if current command is 'restart'
     mov di, restart_cmd
@@ -316,7 +322,170 @@ command_sysinfo:
     .cpu_amd_str    db 'Vendor: AMD', 0
     .processor_str  db 'Processor: ', 0
 
-    .kernel_location_str db 'Kernel loaded at address: 0x1000', 0
+    .kernel_location_str db 'Kernel loaded at memory segment: 0x1000', 0
+
+; ------------------------------------------------------------------
+; Code for 'DISKINFO' command.
+
+command_diskinfo:
+    mov dl, 0h
+    call reset_floppy
+
+.read:
+    mov ax, 0x5000
+    push es
+    mov es, ax
+    xor bx, bx
+
+    mov ax, word [.sector]
+    call l2hts
+
+    mov ah, 02h
+    mov al, 01h
+    int 13h
+    pop es
+    jc .end
+
+    add word [.sector], 1
+
+    call check_buffer_empty
+    jc .read
+
+    add word [.emptysec], 1
+
+    jmp .read
+
+.end:
+    mov si, .mem_tot_str
+    call nx_print_string
+
+    xor dx, dx
+    mov ax, [.sector]
+    mov bx, 2048
+    div bx
+
+    ; Integers
+    call nx_int_to_string
+    mov si, ax
+    call nx_print_string
+
+    mov si, .dot
+    call nx_print_string
+
+    ; 10th
+    mov ax, dx
+    mov bx, 10
+    mul bx
+    mov bx, 2048
+    div bx
+
+    call nx_int_to_string
+    mov si, ax
+    call nx_print_string
+
+    ; 100th
+    mov ax, dx
+    mov bx, 10
+    mul bx
+    mov bx, 2048
+    div bx
+
+    call nx_int_to_string
+    mov si, ax
+    call nx_print_string 
+
+    ; Suffix
+    mov si, .mem_suffix
+    call nx_print_string
+
+    call nx_print_nl
+
+    mov si, .mem_str
+    call nx_print_string
+
+    xor dx, dx
+    mov ax, [.emptysec]
+    mov bx, 2048
+    div bx
+
+    ; Integers
+    call nx_int_to_string
+    mov si, ax
+    call nx_print_string
+
+    mov si, .dot
+    call nx_print_string
+
+    ; 10th
+    mov ax, dx
+    mov bx, 10
+    mul bx
+    mov bx, 2048
+    div bx
+
+    call nx_int_to_string
+    mov si, ax
+    call nx_print_string
+
+    ; 100th
+    mov ax, dx
+    mov bx, 10
+    mul bx
+    mov bx, 2048
+    div bx
+
+    call nx_int_to_string
+    mov si, ax
+    call nx_print_string 
+
+    ; Suffix
+    mov si, .mem_suffix
+    call nx_print_string
+
+    call nx_print_nl
+
+    jmp nx_cli
+
+    .sector      dw 0
+    .emptysec    dw 0
+
+    .mem_tot_str db 'Disk size: ', 0
+    .mem_str     db 'Free space: ', 0
+    .mem_suffix  db 'MB', 0
+    .dot db '.', 0
+
+check_buffer_empty:
+    pusha
+    push ds
+
+    mov cx, 0x200
+    mov ax, 0x5000
+    mov ds, ax
+    mov si, 0
+
+.more:
+    cmp cx, 0
+    je .empty
+
+    mov al, [si]
+    cmp al, 0
+    jne .not_empty
+
+    inc si
+    dec cx
+    jmp .more
+
+.not_empty:
+    pop ds
+    popa
+    stc
+    ret
+
+.empty:
+    pop ds
+    popa
+    clc
+    ret
 
 ; ------------------------------------------------------------------
 ; Code for 'DESTROY' command.
@@ -349,7 +518,7 @@ command_destroy:
 
     mov ax, word [.sector]
     call l2hts
-
+    ;jmp .done
     mov ah, 03h
     mov al, 01h
     int 13h
@@ -364,13 +533,8 @@ command_destroy:
     mov ax, 13h         ; Switch to graphics mode
     int 10h
 
-;    mov ah, 0Ch
-;    mov al, 4
-;    mov cx, 160
-;    mov dx, 100
-;    int 10h
-
-mov al, 0Bh
+.draw:
+mov al, 0h
 
 xor dx, dx
 .begin_line:
@@ -392,21 +556,24 @@ xor dx, dx
     jmp .begin_line
 
 .end:
-    jmp $
-
-    ;mov ax, 0
-    ;int 19h             ; Reboot the system
+    jmp .draw
 
 .get_rand_color:
     push cx
     push dx
+    push bx
 
-    mov dx, 0
-    add ax, 0AFA7h
-    mov cx, 0Fh
-    div cx
+    mov ax, [.prevrand]
+    mov bx, 0x41A7
+    mul bx
+    add ax, 0h
+    xor dx, dx
+    mov bx, 0Fh
+    mov [.prevrand], ax
+    div bx
     mov ax, dx
 
+    pop bx
     pop dx
     pop cx
     ret
@@ -414,6 +581,7 @@ xor dx, dx
     .sector dw 0
     .buffer times 512 db 0
 
+    .prevrand     dw 0x41A7
     .destroy_str3 db 'The World And Everything You Know Will Destroy In 3', 0Dh, 0
     .destroy_str2 db 'The World And Everything You Know Will Destroy In 2', 0Dh, 0
     .destroy_str1 db 'The World And Everything You Know Will Destroy In 1', 0Dh, 0
@@ -575,6 +743,7 @@ cli_log_out:
     cls_cmd             db 'cls',     0
     beep_cmd            db 'beep',    0
     sysinfo_cmd         db 'sysinfo', 0
+    diskinfo_cmd        db 'diskinfo', 0
     restart_cmd         db 'restart', 0
     destroy_cmd         db 'destroy', 0
 
