@@ -42,6 +42,9 @@ nx_scan_string:
     cmp al, 13
     je .done            ; If Enter key pressed we are done
 
+    cmp al, 8
+    je .backspace       ; If backspace pressed
+
     cmp al, ' '         ; Ignore most non-printing characters
     jb .scan
 
@@ -49,6 +52,25 @@ nx_scan_string:
     ja .scan
 
     jmp .accept
+
+.backspace:
+    cmp cx, 0
+    je .scan
+
+    pusha
+    mov ah, 0Eh
+    mov al, 8
+    int 10h
+    mov al, 32
+    int 10h
+    mov al, 8
+    int 10h
+    popa
+
+    dec di
+    dec cx
+
+    jmp .scan
 
 .accept:
     pusha

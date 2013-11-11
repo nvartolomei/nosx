@@ -13,6 +13,7 @@
 ;   * Beep a sound                          beep
 ;   * Clear screen                          cls
 ;   * Get boot drive free space             diskinfo
+;   * Get memory info                       meminfo
 
 ; ------------------------------------------------------------------
 ; Main Command Line Interpreter loop.
@@ -59,13 +60,16 @@ nx_cli:
     call nx_string_cmp
     jc command_cls
 
+    cmp byte [cli_disable_auth], 1
+    je .authorized
+
     ; Check if user is logged in
-;    cmp byte [user_logged_in], 1
-;    je .authorized
+    cmp byte [user_logged_in], 1
+    je .authorized
 ;
-;    mov si, cli_auth_err
-;    call nx_print_string
-;    jmp nx_cli
+    mov si, cli_auth_err
+    call nx_print_string
+    jmp nx_cli
 
 .authorized:
     ; Check if current command is 'logout'
@@ -97,6 +101,11 @@ nx_cli:
     mov di, diskinfo_cmd
     call nx_string_cmp
     jc command_diskinfo
+
+    ; Check if current command is 'meminfo'
+    mov di, meminfo_cmd
+    call nx_string_cmp
+    jc command_meminfo
 
     ; Check if current command is 'restart'
     mov di, restart_cmd
@@ -488,6 +497,25 @@ check_buffer_empty:
     ret
 
 ; ------------------------------------------------------------------
+; Code for 'MEMINFO' command.
+
+command_meminfo:
+    pusha
+
+    xor cx, cx
+    xor dx, dx
+    mov ax, 0E801h
+    int 0x15        ; request upper memory size
+    jcxz .print     ; was the CX result invalid?
+    mov ax, cx
+    mov bx, dx
+
+.print:
+    
+    popa
+    call nx_cli
+
+; ------------------------------------------------------------------
 ; Code for 'DESTROY' command.
 
 command_destroy:
@@ -717,6 +745,7 @@ cli_log_out:
                            'For this text run help, also you can exit cli.',        NL,      0
 
     cli_invalid_cmd     db 'ERROR: No such command!', NL, 0
+    cli_disable_auth    db 0
 
 ; ------------------------------------------------------------------
 ; CLI Auth module related defines.
@@ -744,6 +773,7 @@ cli_log_out:
     beep_cmd            db 'beep',    0
     sysinfo_cmd         db 'sysinfo', 0
     diskinfo_cmd        db 'diskinfo', 0
+    meminfo_cmd         db 'meminfo', 0
     restart_cmd         db 'restart', 0
     destroy_cmd         db 'destroy', 0
 
