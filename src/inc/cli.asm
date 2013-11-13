@@ -401,7 +401,7 @@ command_diskinfo:
 
     call nx_int_to_string
     mov si, ax
-    call nx_print_string 
+    call nx_print_string
 
     ; Suffix
     mov si, .mem_suffix
@@ -445,7 +445,7 @@ command_diskinfo:
 
     call nx_int_to_string
     mov si, ax
-    call nx_print_string 
+    call nx_print_string
 
     ; Suffix
     mov si, .mem_suffix
@@ -511,7 +511,7 @@ command_meminfo:
     mov bx, dx
 
 .print:
-    
+
     popa
     call nx_cli
 
