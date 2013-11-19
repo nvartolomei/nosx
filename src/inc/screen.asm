@@ -164,6 +164,25 @@ nx_clear_screen:
     ret
 
 ; ------------------------------------------------------------------
+; nx_get_cursor_pos -- Return position of text cursor
+; OUT: DH, DL = row, column
+
+nx_get_cursor_pos:
+    pusha
+
+    mov bh, 0
+    mov ah, 3
+    int 10h             ; BIOS interrupt to get cursor position
+
+    mov [.tmp], dx
+    popa
+    mov dx, [.tmp]
+    ret
+
+
+    .tmp dw 0
+
+; ------------------------------------------------------------------
 ; nx_move_cursor -- Moves cursor in text mode
 ; IN: DH, DL = row, column; OUT: Nothing (registers preserved)
 

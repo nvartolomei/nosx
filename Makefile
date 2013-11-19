@@ -19,7 +19,7 @@ bin/bootloader.bin: src/bootloader.asm
 	@echo "> Compiling loader..."
 	@nasm -f bin -I src/inc/ -o bin/bootloader.bin src/bootloader.asm
 
-bin/kernel.bin: src/kernel.asm src/inc/screen.asm src/inc/defines.asm src/inc/cli.asm
+bin/kernel.bin: src/kernel.asm src/matlab.asm src/inc/screen.asm src/inc/defines.asm src/inc/cli.asm
 	@echo "> Compiling kernel..."
 	@nasm -f bin -I src/inc/ -o bin/kernel.bin src/kernel.asm
 

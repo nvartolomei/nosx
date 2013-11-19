@@ -132,7 +132,7 @@ end:
     xor dx, dx
     xor ax, ax
     mov ah, 86h
-    mov cx, 50
+    mov cx, 10
     int 15h
 
     ; Jump to entry point of loaded kernel

@@ -77,6 +77,10 @@ nx_cli:
     call nx_string_cmp
     jc cli_log_out
 
+    mov di, matlab_cmd
+    call nx_string_cmp
+    jc matlab_main
+
     ; Check if current command is 'time'
     mov di, time_cmd
     call nx_string_cmp
@@ -745,7 +749,7 @@ cli_log_out:
                            'For this text run help, also you can exit cli.',        NL,      0
 
     cli_invalid_cmd     db 'ERROR: No such command!', NL, 0
-    cli_disable_auth    db 0
+    cli_disable_auth    db 1
 
 ; ------------------------------------------------------------------
 ; CLI Auth module related defines.
@@ -766,6 +770,8 @@ cli_log_out:
 
     help_cmd            db 'help', 0
     exit_cmd            db 'exit', 0
+
+    matlab_cmd          db 'matlab', 0
 
     time_cmd            db 'time',    0
     date_cmd            db 'date',    0

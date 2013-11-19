@@ -44,4 +44,5 @@ start:
     %INCLUDE 'string.asm'
     %INCLUDE 'screen.asm'
     %INCLUDE 'cli.asm'
+    %INCLUDE '/../matlab.asm'
     %INCLUDE 'disk.asm'
