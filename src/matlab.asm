@@ -90,7 +90,6 @@ mov di, ml_memory_temp
     mov si, ax
     call nx_string_to_int         ; convert number from string to int
     stosw                         ; store number into temporary buffer
-    inc di                        ; incerement buffer's pointer
 
     add word [.per_line], 1
 
@@ -115,6 +114,7 @@ mov di, ml_memory_temp
     mov si, ax
     call nx_string_to_int
     call ml_save_slot
+    call ml_read_slot
 
 .done:
     jmp matlab_cli
@@ -136,8 +136,6 @@ ml_cmd_sum:
 .copy_f_d:
     lodsw
     stosw
-    inc si
-    inc di
     dec cx
     jnz .copy_f_d
 
@@ -158,9 +156,8 @@ ml_cmd_sum:
 
     stosw
 
-    inc di
-    add word [.source], 3
-    add word [.dest], 3
+    add word [.source], 2
+    add word [.dest], 2
 
     dec cx
 
@@ -448,7 +445,6 @@ ml_print_matrix:
     ; Printing characters (actually numbers)
     xor ax, ax
     lodsw
-    inc si
     call nx_sint_to_string
 
     pusha

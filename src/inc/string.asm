@@ -79,7 +79,7 @@ nx_string_to_int:
     mov ax, si          ; First, get length of string
     call nx_string_length
 
-    mov bx, 0
+    mov bx, 0           ; Don't do anything for empty strings
     cmp ax, 0
     je .finish
 
