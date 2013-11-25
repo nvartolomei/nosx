@@ -3,7 +3,7 @@ matlab_main:
     ; Print help
     mov si, ml_welcome
     call nx_print_string
-
+    call ml_read_data
     jmp matlab_cli
 
 matlab_cli:
@@ -39,11 +39,6 @@ matlab_cli:
     call nx_string_cmp
     jc ml_cmd_scan
 
-    ; Check if command is 'READ'
-    mov di, ml_read_cmd
-    call nx_string_cmp
-    jc ml_cmd_read
-
     ; Check if command is 'PRINT'
     mov di, ml_print_cmd
     call nx_string_cmp
@@ -64,6 +59,24 @@ ml_cmd_scan:
     mov si, ml_matrix_tpl_help
     call nx_print_string
 
+.choose_slot:
+    mov si, ml_choose_slot
+    call nx_print_string
+    call nx_scan_string
+    call nx_print_nl
+    mov si, ax
+    call nx_string_to_int
+    cmp ax, 1
+    jb .choose_slot
+    cmp ax, 2
+    ja .choose_slot
+
+    mov di, ml_memory
+    mov bx, 32
+    dec ax
+    mul bl
+    add di, ax
+
     ; print matrix template
     mov si, ml_matrix_tpl
     call nx_print_string
@@ -73,8 +86,6 @@ ml_cmd_scan:
     call nx_get_cursor_pos
     sub dh, 6
     mov dl, 0
-
-mov di, ml_memory_temp
 
 .read_line:
     add dh, 1
@@ -86,10 +97,11 @@ mov di, ml_memory_temp
     add dl, 5
     call nx_move_cursor
 
+    mov ax, .num_buf
     call ml_scan_number           ; read number
     mov si, ax
     call nx_string_to_int         ; convert number from string to int
-    stosw                         ; store number into temporary buffer
+    stosw
 
     add word [.per_line], 1
 
@@ -101,26 +113,16 @@ mov di, ml_memory_temp
     cmp word [.lines], 4
     jne .read_line
 
-.choose_slot:
+.done:
     add dh, 2
     mov dl, 0
     call nx_move_cursor
-
-    mov si, ml_choose_slot
-    call nx_print_string
-
-    call nx_scan_string
-    call nx_print_nl
-    mov si, ax
-    call nx_string_to_int
-    call ml_save_slot
-    call ml_read_slot
-
-.done:
+    call ml_save_data
     jmp matlab_cli
 
     .per_line           dw 0
     .lines              dw 0
+    .num_buf            times 10 db 0
 
 ; ------------------------------------------------------------------
 ; Code for 'SUM' command.
@@ -128,9 +130,9 @@ mov di, ml_memory_temp
 ml_cmd_sum:
 
     ; Copy first buffer to destination first
-
-    mov si, ml_memory_1
-    mov di, ml_memory_3
+    mov si, ml_memory
+    mov di, ml_memory
+    add di, 64
     mov cx, 16
 
 .copy_f_d:
@@ -141,9 +143,11 @@ ml_cmd_sum:
 
     mov cx, 16
 
-    mov word [.source], ml_memory_2
-    mov word [.dest], ml_memory_3
-    mov di, ml_memory_3
+    mov word [.source], ml_memory
+    add word [.source], 32
+    mov word [.dest], ml_memory
+    add word [.dest], 64
+    mov di, word [.dest]
 
 .sum_s_d:
     mov si, word [.source]
@@ -166,37 +170,27 @@ ml_cmd_sum:
 
 
 .finish:
+    call ml_save_data
     jmp matlab_cli
 
     .source dw 0
     .dest   dw 0
 
-
-; ------------------------------------------------------------------
-; Code for 'READ' command.
-
-ml_cmd_read:
-    mov si, ml_choose_slot
-    call nx_print_string
-    call nx_scan_string
-    call nx_print_nl
-    mov si, ax
-    call nx_string_to_int
-    call ml_read_slot
-    call ml_print_matrix
-
-    jmp matlab_cli
-
 ; ------------------------------------------------------------------
 ; Code for 'PRINT' command.
 
 ml_cmd_print:
-    mov si, ml_choose_slot
+.choose_slot:
+    mov si, ml_choose_slot_ext
     call nx_print_string
     call nx_scan_string
     call nx_print_nl
     mov si, ax
     call nx_string_to_int
+    cmp ax, 1
+    jb .choose_slot
+    cmp ax, 3
+    ja .choose_slot
     call ml_print_matrix
 
     jmp matlab_cli
@@ -204,7 +198,6 @@ ml_cmd_print:
 
 ; ------------------------------------------------------------------
 ; Code for 'EXIT' command.
-
 
 ml_cmd_exit:
 
@@ -215,20 +208,15 @@ ml_cmd_exit:
 ; ml_save_slot -- Saves data from buffer to a sector to disk
 ; IN: AX = slot number, BX = buffer offset
 
-ml_save_slot:
+ml_save_data:
     pusha
 
-    cmp ax, 1           ; Slot number >= 1
-    jb .err
-    cmp ax, 3           ; Slot number <= 3
-    ja .err
-
-.next:
+    mov ax, 1
     call l2hts
 
     mov ax, 0x1000      ; Kernel segment
     mov es, ax
-    mov bx, ml_memory_temp        ; Write from temporary buffer to disk
+    mov bx, ml_memory       ; Write from temporary buffer to disk
 
     mov ah, 0x3         ; Write function
     mov al, 0x1         ; Number of sectors to write
@@ -255,34 +243,13 @@ ml_save_slot:
 ; ml_read_slot -- Read data from disk to buffer
 ; OUT: AX = slot number (int)
 
-ml_read_slot:
+ml_read_data:
     pusha
 
-    cmp ax, 1           ; Slot number >= 1
-    jb .err
-    cmp ax, 3           ; Slot number <= 3
-    ja .err
-
-    cmp ax, 1
-    je .first_sector
-
-    cmp ax, 2
-    je .second_sector
-
-    cmp ax, 3
-    je .third_sector
-
-.first_sector:
-    mov bx, ml_memory_1
-    jmp .next
-.second_sector:
-    mov bx, ml_memory_2
-    jmp .next
-.third_sector:
-    mov bx, ml_memory_3
-    jmp .next
+    mov bx, ml_memory
 
 .next:
+    mov ax, 1
     call l2hts
 
     mov ax, 0x1000      ; Kernel segment
@@ -324,15 +291,6 @@ ml_scan_number:
     cmp al, 13
     je .done            ; If Enter key pressed we are done
 
-    cmp al, 8
-    je .backspace       ; If backspace pressed
-
-    cmp al, 0x2B
-    je .plus_sign
-
-    cmp al, 0x2D
-    je .minus_sign
-
     cmp al, '0'         ; Ignore most non-printing characters
     jb .scan
 
@@ -340,43 +298,6 @@ ml_scan_number:
     ja .scan
 
     jmp .accept
-
-.plus_sign:
-    cmp cx, 0
-    jne .scan
-    pusha
-    mov ah, 0xE
-    int 10h
-    popa
-    jmp .scan
-
-.minus_sign:
-    cmp cx, 0
-    jne .scan
-    pusha
-    mov ah, 0xE
-    int 10h
-    popa
-    jmp .scan
-
-.backspace:
-    cmp cx, 0
-    je .scan
-
-    pusha
-    mov ah, 0Eh
-    mov al, 8
-    int 10h
-    mov al, 32
-    int 10h
-    mov al, 8
-    int 10h
-    popa
-
-    dec di
-    dec cx
-
-    jmp .scan
 
 .accept:
     pusha
@@ -406,22 +327,11 @@ ml_print_matrix:
     mov si, ml_matrix_tpl
     call nx_print_string
 
-    cmp ax, 1
-    je .first_sector
-    cmp ax, 2
-    je .second_sector
-    cmp ax, 3
-    je .third_sector
-
-.first_sector:
-    mov si, ml_memory_1
-    jmp .next
-.second_sector:
-    mov si, ml_memory_2
-    jmp .next
-.third_sector:
-    mov si, ml_memory_3
-    jmp .next
+    mov si, ml_memory
+    mov bx, 32
+    dec ax
+    mul bl
+    add si, ax
 
 .next:
     mov word [.per_line], 0
@@ -470,7 +380,6 @@ ml_print_matrix:
 
     .per_line           dw 0
     .lines              dw 0
-    .not db '___', 0
 
 ; =============================================================================
 ; Strings and variables
@@ -483,17 +392,16 @@ ml_print_matrix:
                            'Have fun!', NL, NL, 0
 
     ml_scan_cmd         db 'scan', 0  ; scan data to a slot
-    ml_read_cmd         db 'read', 0  ; read slots from disk
     ml_clear_cmd        db 'clear', 0 ; used for clearing a slot
 
-    ml_print_cmd          db 'print', 0
+    ml_print_cmd        db 'print', 0
 
     ml_sum_cmd          db 'sum', 0
 
     ml_choose_slot      db 'Choose slot [1/2]: ', 0
-    ml_choose_slot_err  db 'Incorrect value inserted. Try again.', NL, 0
+    ml_choose_slot_ext  db 'Choose slot [1/2/3]: ', 0
 
-    ml_slot_write       db 'Data written succesful!', NL, 0
+    ml_slot_write       db 'Data flushed to disk!', NL, 0
     ml_slot_write_err   db 'Error writing data!', NL, 0
 
     ml_slot_read        db 'Data read succesful!', NL, 0
@@ -512,10 +420,4 @@ ml_print_matrix:
                            0xC8, 0xCD, '                    ', 0xCD, 0xBC, NL, \
                            0
 
-    ; temp
-    ml_memory_temp      times 256 dw 0
-
-    ; memory slots buffers (one sector)
-    ml_memory_1         times 256 dw 0
-    ml_memory_2         times 256 dw 0
-    ml_memory_3         times 256 dw 0
+    ml_memory           times 256 dw 0

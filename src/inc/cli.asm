@@ -749,7 +749,7 @@ cli_log_out:
                            'For this text run help, also you can exit cli.',        NL,      0
 
     cli_invalid_cmd     db 'ERROR: No such command!', NL, 0
-    cli_disable_auth    db 1
+    cli_disable_auth    db 0
 
 ; ------------------------------------------------------------------
 ; CLI Auth module related defines.
