@@ -1,7 +1,6 @@
 nosx
 ====
 
-# Task List | September, 24
+A project for operating system course from 2013.
 
-    1. Command line, 10 comenzi, functionalitati
-
+The list of supported commands is defined in the [cli.asm](https://github.com/nvartolomei/nosx/blob/main/src/inc/cli.asm) file.
